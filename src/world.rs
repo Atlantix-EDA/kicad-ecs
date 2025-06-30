@@ -77,6 +77,151 @@ impl PcbWorld {
         )).id()
     }
     
+    // ===== Factory-style spawn methods =====
+    
+    /// Spawn a generic PCB footprint/component entity
+    #[instrument(skip(self), fields(reference = %footprint_data.reference))]
+    pub fn spawn_footprint(&mut self, footprint_data: crate::client::FootprintData) -> Entity {
+        debug!("Spawning footprint {} to ECS world", footprint_data.reference);
+        
+        let entity = self.world.spawn((
+            ComponentId { uuid: footprint_data.id },
+            ComponentInfo { 
+                reference: footprint_data.reference,
+                value: footprint_data.value,
+                footprint_name: footprint_data.footprint_name,
+            },
+            Position { 
+                x: footprint_data.position.0, 
+                y: footprint_data.position.1, 
+                rotation: footprint_data.rotation,
+            },
+            Layer { layer_name: footprint_data.layer },
+            ComponentDescription { 
+                description: footprint_data.description.unwrap_or_default(),
+            },
+            ComponentFlags {
+                exclude_from_bom: footprint_data.exclude_from_bom,
+                do_not_populate: footprint_data.do_not_populate,
+                locked: footprint_data.locked,
+            },
+        ));
+        
+        self.component_count += 1;
+        entity.id()
+    }
+    
+    /// Spawn a resistor entity
+    #[instrument(skip(self), fields(reference = %reference))]
+    pub fn spawn_resistor(&mut self, 
+                         id: String,
+                         reference: String,
+                         value: String, 
+                         footprint: String,
+                         position: (f64, f64, f64),
+                         layer: String) -> Entity {
+        debug!("Spawning resistor {} to ECS world", reference);
+        
+        let entity = self.world.spawn((
+            ComponentId { uuid: id },
+            ComponentInfo { reference, value, footprint_name: footprint },
+            Position { x: position.0, y: position.1, rotation: position.2 },
+            Layer { layer_name: layer },
+            Resistor, // Marker component for resistors
+        ));
+        
+        self.component_count += 1;
+        entity.id()
+    }
+    
+    /// Spawn a capacitor entity
+    #[instrument(skip(self), fields(reference = %reference))]
+    pub fn spawn_capacitor(&mut self,
+                          id: String, 
+                          reference: String,
+                          value: String,
+                          footprint: String,
+                          position: (f64, f64, f64),
+                          layer: String) -> Entity {
+        debug!("Spawning capacitor {} to ECS world", reference);
+        
+        let entity = self.world.spawn((
+            ComponentId { uuid: id },
+            ComponentInfo { reference, value, footprint_name: footprint },
+            Position { x: position.0, y: position.1, rotation: position.2 },
+            Layer { layer_name: layer },
+            Capacitor, // Marker component for capacitors
+        ));
+        
+        self.component_count += 1;
+        entity.id()
+    }
+    
+    /// Spawn an IC entity
+    #[instrument(skip(self), fields(reference = %reference))]
+    pub fn spawn_ic(&mut self,
+                   id: String,
+                   reference: String, 
+                   value: String,
+                   footprint: String,
+                   position: (f64, f64, f64),
+                   layer: String) -> Entity {
+        debug!("Spawning IC {} to ECS world", reference);
+        
+        let entity = self.world.spawn((
+            ComponentId { uuid: id },
+            ComponentInfo { reference, value, footprint_name: footprint },
+            Position { x: position.0, y: position.1, rotation: position.2 },
+            Layer { layer_name: layer },
+            IntegratedCircuit, // Marker component for ICs
+        ));
+        
+        self.component_count += 1;
+        entity.id()
+    }
+    
+    /// Spawn a connector entity
+    #[instrument(skip(self), fields(reference = %reference))]
+    pub fn spawn_connector(&mut self,
+                          id: String,
+                          reference: String,
+                          value: String, 
+                          footprint: String,
+                          position: (f64, f64, f64),
+                          layer: String) -> Entity {
+        debug!("Spawning connector {} to ECS world", reference);
+        
+        let entity = self.world.spawn((
+            ComponentId { uuid: id },
+            ComponentInfo { reference, value, footprint_name: footprint },
+            Position { x: position.0, y: position.1, rotation: position.2 },
+            Layer { layer_name: layer },
+            Connector, // Marker component for connectors
+        ));
+        
+        self.component_count += 1;
+        entity.id()
+    }
+    
+    /// Spawn a mounting hole entity
+    #[instrument(skip(self), fields(reference = %reference))]  
+    pub fn spawn_mounting_hole(&mut self,
+                              id: String,
+                              reference: String,
+                              position: (f64, f64, f64),
+                              layer: String,
+                              diameter: f64,
+                              screw_size: String) -> Entity {
+        debug!("Spawning mounting hole {} to ECS world", reference);
+        
+        self.world.spawn((
+            ComponentId { uuid: id },
+            Position { x: position.0, y: position.1, rotation: position.2 },
+            Layer { layer_name: layer },
+            MountingHole { diameter_mm: diameter, screw_size },
+        )).id()
+    }
+    
     /// Get the number of components
     pub fn component_count(&self) -> usize {
         self.component_count

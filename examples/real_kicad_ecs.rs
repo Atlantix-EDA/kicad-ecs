@@ -120,7 +120,7 @@ impl KiCadSupervisor {
             // Check if it's a mounting hole
             if self.is_mounting_hole(&fp) {
                 mounting_holes += 1;
-                self.pcb_world.add_mounting_hole(
+                self.pcb_world.spawn_mounting_hole(
                     fp.id,
                     fp.reference,
                     (fp.position.0, fp.position.1, fp.rotation),
@@ -129,17 +129,37 @@ impl KiCadSupervisor {
                     "M3".to_string(), // Default screw size
                 );
             } else {
-                // Regular component
-                self.pcb_world.add_component(
-                    fp.id,
-                    fp.reference,
-                    fp.value,
-                    fp.footprint_name,
-                    (fp.position.0, fp.position.1, fp.rotation),
-                    fp.layer,
-                    fp.description.unwrap_or_default(),
-                    (fp.exclude_from_bom, fp.do_not_populate, fp.locked),
-                );
+                // Smart spawning based on component reference prefix
+                match fp.reference.chars().next() {
+                    Some('R') => {
+                        self.pcb_world.spawn_resistor(
+                            fp.id, fp.reference, fp.value, fp.footprint_name,
+                            (fp.position.0, fp.position.1, fp.rotation), fp.layer
+                        );
+                    },
+                    Some('C') => {
+                        self.pcb_world.spawn_capacitor(
+                            fp.id, fp.reference, fp.value, fp.footprint_name,
+                            (fp.position.0, fp.position.1, fp.rotation), fp.layer
+                        );
+                    },
+                    Some('U') => {
+                        self.pcb_world.spawn_ic(
+                            fp.id, fp.reference, fp.value, fp.footprint_name,
+                            (fp.position.0, fp.position.1, fp.rotation), fp.layer
+                        );
+                    },
+                    Some('J') => {
+                        self.pcb_world.spawn_connector(
+                            fp.id, fp.reference, fp.value, fp.footprint_name,
+                            (fp.position.0, fp.position.1, fp.rotation), fp.layer
+                        );
+                    },
+                    _ => {
+                        // Generic footprint for unknown component types
+                        self.pcb_world.spawn_footprint(fp);
+                    },
+                }
             }
         }
 

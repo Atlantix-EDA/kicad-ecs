@@ -50,3 +50,21 @@ pub struct MountingHole {
     pub diameter_mm: f64,
     pub screw_size: String,  // M2, M3, M4, etc.
 }
+
+// ===== Component type markers =====
+
+/// Marker component for resistors
+#[derive(Component, Debug, Clone)]
+pub struct Resistor;
+
+/// Marker component for capacitors
+#[derive(Component, Debug, Clone)]
+pub struct Capacitor;
+
+/// Marker component for integrated circuits
+#[derive(Component, Debug, Clone)]
+pub struct IntegratedCircuit;
+
+/// Marker component for connectors
+#[derive(Component, Debug, Clone)]
+pub struct Connector;
