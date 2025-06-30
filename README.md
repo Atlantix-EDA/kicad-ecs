@@ -26,17 +26,24 @@ ECS allows you to compose these different aspects without complex inheritance hi
 ```rust
 use kicad_ecs::prelude::*;
 
-fn main() -> Result<()> {
-    // Connect to KiCad
-    let client = KiCadClient::connect()?;
+#[tokio::main]
+async fn main() -> Result<()> {
+    // Connect to running KiCad instance
+    let mut client = KiCadClient::connect()?;
     
-    // Load board into ECS
-    let mut world = PcbWorld::from_board(client.get_board()?)?;
+    // Get footprints from open board
+    let footprints = client.get_footprints().await?;
     
-    // Query components
-    let mut query = world.query::<(&Position, &Footprint)>();
-    for (pos, footprint) in query.iter(&world) {
-        println!("{} at ({}, {})", footprint.reference, pos.x, pos.y);
+    // Create ECS world and load components
+    let mut pcb_world = PcbWorld::new();
+    for fp in footprints {
+        pcb_world.spawn_footprint(fp);
+    }
+    
+    // Query components using ECS
+    let mut query = pcb_world.world.query::<(&ComponentInfo, &Position)>();
+    for (info, pos) in query.iter(&pcb_world.world) {
+        println!("{} at ({:.1}, {:.1})mm", info.reference, pos.x, pos.y);
     }
     
     Ok(())
@@ -46,13 +53,15 @@ fn main() -> Result<()> {
 ## Architecture
 
 The library maps KiCad concepts to ECS:
-- **KiCad PCB Component** → **ECS Entity**
+- **KiCad PCB Footprint** → **ECS Entity**
 - **Component Properties** → **ECS Components**
+  - `ComponentId` - Unique identifier (UUID)
+  - `ComponentInfo` - Reference, value, footprint name
   - `Position` - X, Y coordinates and rotation
-  - `Footprint` - Reference, value, library info
-  - `Electrical` - Nets, pins, connections
-  - `Thermal` - Heat dissipation, thermal pads
-  - `Mechanical` - Height, weight, mounting
+  - `Layer` - PCB layer name
+  - `ComponentDescription` - Component description
+  - `ComponentFlags` - DNP, exclude from BOM, locked status
+  - Type markers: `Resistor`, `Capacitor`, `IntegratedCircuit`, `Connector`
 
 ## Features
 
@@ -67,27 +76,20 @@ The library maps KiCad concepts to ECS:
 ## Examples
 
 See the `examples/` directory for:
-- `basic.rs` - Simple connection and queries
-- `tracing_demo.rs` - Structured logging demonstration
-- `ecs_integration.rs` - Complete ECS integration with KiCad (the main example!)
+- `real_kicad_ecs.rs` - Real KiCad integration that connects to a running KiCad instance and loads PCB data into ECS
+- `tracing_demo.rs` - Structured logging demonstration with tracing
 
 ### Running Examples
 
 ```bash
-# Basic example
-cargo run --example basic
+# Real KiCad ECS integration (requires KiCad running with an open PCB)
+cargo run --example real_kicad_ecs
 
 # Tracing demo with debug logging
 RUST_LOG=debug cargo run --example tracing_demo
 
 # JSON structured output
 KICAD_ECS_JSON_LOGS=1 cargo run --example tracing_demo
-
-# Full ECS integration example (requires KiCad running)
-cargo run --example ecs_integration
-
-# ECS integration with debug logging
-RUST_LOG=debug cargo run --example ecs_integration
 ```
 
 ## Contributing
