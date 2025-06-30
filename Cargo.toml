@@ -1,0 +1,28 @@
+[package]
+name = "kicad-ecs"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "Entity Component System (ECS) architecture for KiCad PCB design data"
+repository = "https://github.com/yourusername/kicad-ecs"
+license = "MIT OR Apache-2.0"
+keywords = ["kicad", "ecs", "pcb", "cad", "electronics"]
+categories = ["science", "simulation"]
+
+[dependencies]
+bevy_ecs = "0.14"
+prost = "0.12"
+tokio = { version = "1", features = ["full"] }
+eyre = "0.6"
+prettytable-rs = "0.10"
+
+[build-dependencies]
+prost-build = "0.12"
+
+[[example]]
+name = "basic"
+path = "examples/basic.rs"
+
+[[example]]
+name = "analysis"
+path = "examples/analysis.rs"
