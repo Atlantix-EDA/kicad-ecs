@@ -61,13 +61,34 @@ The library maps KiCad concepts to ECS:
 - ✅ Type-safe component queries
 - ✅ Extensible component types
 - ✅ Built on Bevy ECS
+- ✅ Structured logging with `tracing`
+- ✅ Comprehensive error handling
 
 ## Examples
 
 See the `examples/` directory for:
 - `basic.rs` - Simple connection and queries
-- `analysis.rs` - Thermal and mechanical analysis
-- `rules.rs` - Design rule checking with ECS
+- `tracing_demo.rs` - Structured logging demonstration
+- `ecs_integration.rs` - Complete ECS integration with KiCad (the main example!)
+
+### Running Examples
+
+```bash
+# Basic example
+cargo run --example basic
+
+# Tracing demo with debug logging
+RUST_LOG=debug cargo run --example tracing_demo
+
+# JSON structured output
+KICAD_ECS_JSON_LOGS=1 cargo run --example tracing_demo
+
+# Full ECS integration example (requires KiCad running)
+cargo run --example ecs_integration
+
+# ECS integration with debug logging
+RUST_LOG=debug cargo run --example ecs_integration
+```
 
 ## Contributing
 

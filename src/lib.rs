@@ -9,6 +9,7 @@ pub mod client;
 pub mod components;
 pub mod systems;
 pub mod world;
+pub mod tracing;
 
 pub mod prelude {
     pub use crate::client::KiCadClient;
