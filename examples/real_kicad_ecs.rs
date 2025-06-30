@@ -11,8 +11,7 @@
 //! Run with: `cargo run --example real_kicad_ecs`
 
 use kicad_ecs::prelude::*;
-use kicad_ecs::components::*;
-use prettytable::{Table, row, format};
+use prettytable::{Table, row, format, Cell};
 use tracing::{info, warn, error};
 use std::time::Duration;
 
@@ -112,14 +111,13 @@ impl KiCadSupervisor {
 
     /// Load footprint data into ECS world
     fn load_footprints_into_ecs(&mut self, footprints: Vec<kicad_ecs::client::FootprintData>) -> Result<(), String> {
-        info!("Loading {} footprints into ECS", footprints.len());
 
-        let mut mounting_holes = 0;
+        let mut _mounting_holes = 0;
 
         for fp in footprints {
             // Check if it's a mounting hole
             if self.is_mounting_hole(&fp) {
-                mounting_holes += 1;
+                _mounting_holes += 1;
                 self.pcb_world.spawn_mounting_hole(
                     fp.id,
                     fp.reference,
@@ -163,8 +161,6 @@ impl KiCadSupervisor {
             }
         }
 
-        info!("Loaded {} components and {} mounting holes", 
-              self.pcb_world.component_count(), mounting_holes);
         
         Ok(())
     }
@@ -185,7 +181,6 @@ impl KiCadSupervisor {
 
     /// Perform ECS-based analysis
     fn perform_analysis(&mut self) {
-        info!("Performing ECS-based board analysis");
 
         let stats = self.pcb_world.get_statistics();
         
@@ -214,6 +209,9 @@ impl KiCadSupervisor {
 
         // Component breakdown by type
         self.analyze_component_types();
+        
+        // Detailed component table
+        self.print_components();
     }
 
     /// Analyze component types using ECS queries
@@ -253,6 +251,82 @@ impl KiCadSupervisor {
             println!("\n🔧 Component Breakdown:");
             type_table.printstd();
         }
+    }
+
+    fn print_components(&mut self) {
+        let mut table = Table::new();
+        table.set_format(*format::consts::FORMAT_BOX_CHARS);
+        
+        table.add_row(row![b->"Ref", b->"Value", b->"Footprint", b->"Description", b->"X(mm)", b->"Y(mm)", b->"Rot°", b->"Layer"]);
+        
+        let mut query = self.pcb_world.world.query::<(&ComponentInfo, &Position, &Layer, &ComponentDescription)>();
+        for (info, pos, layer, desc) in query.iter(&self.pcb_world.world) {
+            
+            let layer_name = &layer.layer_name;
+            
+            // Create a formatted description that wraps at word boundaries
+            let desc_wrapped = if desc.description.len() > 12 {
+                let words: Vec<&str> = desc.description.split_whitespace().collect();
+                let mut lines = Vec::new();
+                let mut current_line = String::new();
+                
+                for word in words {
+                    if current_line.len() + word.len() + 1 > 12 {
+                        if !current_line.is_empty() {
+                            lines.push(current_line);
+                            current_line = String::new();
+                        }
+                    }
+                    if !current_line.is_empty() {
+                        current_line.push(' ');
+                    }
+                    current_line.push_str(word);
+                }
+                if !current_line.is_empty() {
+                    lines.push(current_line);
+                }
+                lines.join("\n")
+            } else {
+                desc.description.clone()
+            };
+            
+            let desc_cell = if desc_wrapped.contains('\n') {
+                let lines: Vec<&str> = desc_wrapped.split('\n').collect();
+                let padded_lines: Vec<String> = lines.iter()
+                    .map(|line| format!("{:<14}", line))
+                    .collect();
+                Cell::new(&padded_lines.join("\n"))
+            } else {
+                Cell::new(&format!("{:<14}", desc_wrapped))
+            };
+            
+            // Truncate columns for reasonable width
+            let value_short = if info.value.len() > 12 {
+                format!("{}...", &info.value[..9])
+            } else {
+                info.value.clone()
+            };
+            
+            let footprint_short = if info.footprint_name.len() > 20 {
+                format!("{}...", &info.footprint_name[..17])
+            } else {
+                info.footprint_name.clone()
+            };
+            
+            table.add_row(row![
+                info.reference,
+                value_short,
+                footprint_short,
+                desc_cell,
+                format!("{:.1}", pos.x),
+                format!("{:.1}", pos.y),
+                format!("{:.0}", pos.rotation),
+                layer_name
+            ]);
+        }
+        
+        println!("\nComponent List (all {} components):", self.pcb_world.component_count());
+        table.printstd();
     }
 
     /// Main state machine update
@@ -310,10 +384,11 @@ impl KiCadSupervisor {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Initialize logging
-    kicad_ecs::tracing::init_for_examples();
-
-    info!("Starting Real KiCad ECS Integration");
+    // Initialize logging - suppress debug messages
+    use tracing_subscriber::EnvFilter;
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env().add_directive("kicad_ecs=info".parse().unwrap()))
+        .init();
     
     println!("🚀 KiCad ECS Integration");
     println!("========================");

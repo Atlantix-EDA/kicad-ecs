@@ -22,7 +22,6 @@ use protos::base_types::*;
 use protos::editor_commands::*;
 use protos::envelope::*;
 use protos::board_types::*;
-use protos::board_commands::*;
 use protos::enums::*;
 
 #[derive(Error, Debug)]
@@ -249,10 +248,31 @@ impl KiCadClient {
         let orientation = footprint_instance.orientation.get_or_default();
         let attributes = footprint_instance.attributes.get_or_default();
         
+        // Extract reference text using proper field navigation
+        let reference = footprint_instance.reference_field.as_ref()
+            .and_then(|field| field.text.as_ref())
+            .and_then(|board_text| board_text.text.as_ref())
+            .map(|text| text.text.clone())
+            .unwrap_or_else(|| format!("REF_{}", footprint_instance.id.get_or_default().value.get(..6).unwrap_or("")));
+        
+        // Extract value text using proper field navigation
+        let value = footprint_instance.value_field.as_ref()
+            .and_then(|field| field.text.as_ref())
+            .and_then(|board_text| board_text.text.as_ref())
+            .map(|text| text.text.clone())
+            .unwrap_or_else(|| "UNKNOWN".to_string());
+        
+        // Extract description if available
+        let description = footprint_instance.description_field.as_ref()
+            .and_then(|field| field.text.as_ref())
+            .and_then(|board_text| board_text.text.as_ref())
+            .map(|text| text.text.clone())
+            .filter(|s| !s.is_empty());
+
         Ok(FootprintData {
             id: footprint_instance.id.get_or_default().value.clone(),
-            reference: footprint_instance.reference_field.get_or_default().text.get_or_default().text.to_string(),
-            value: footprint_instance.value_field.get_or_default().text.get_or_default().text.to_string(),
+            reference,
+            value,
             footprint_name: footprint_instance.definition.get_or_default().id.get_or_default().entry_name.clone(),
             position: (
                 position.x_nm as f64 / 1_000_000.0, // Convert nm to mm
@@ -260,9 +280,7 @@ impl KiCadClient {
             ),
             rotation: orientation.value_degrees,
             layer: self.layer_to_string(footprint_instance.layer.enum_value_or_default()),
-            description: footprint_instance.description_field.as_ref().and_then(|d| 
-                d.text.as_ref().map(|t| t.text.to_string())
-            ),
+            description,
             exclude_from_bom: attributes.exclude_from_bill_of_materials,
             do_not_populate: attributes.do_not_populate,
             locked: footprint_instance.locked.enum_value_or_default() == LockedState::LS_LOCKED,

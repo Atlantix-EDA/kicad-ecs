@@ -98,7 +98,7 @@ impl PcbWorld {
             },
             Layer { layer_name: footprint_data.layer },
             ComponentDescription { 
-                description: footprint_data.description.unwrap_or_default(),
+                description: "Component".to_string(),
             },
             ComponentFlags {
                 exclude_from_bom: footprint_data.exclude_from_bom,
@@ -127,6 +127,7 @@ impl PcbWorld {
             ComponentInfo { reference, value, footprint_name: footprint },
             Position { x: position.0, y: position.1, rotation: position.2 },
             Layer { layer_name: layer },
+            ComponentDescription { description: "Resistor".to_string() },
             Resistor, // Marker component for resistors
         ));
         
@@ -150,6 +151,7 @@ impl PcbWorld {
             ComponentInfo { reference, value, footprint_name: footprint },
             Position { x: position.0, y: position.1, rotation: position.2 },
             Layer { layer_name: layer },
+            ComponentDescription { description: "Capacitor".to_string() },
             Capacitor, // Marker component for capacitors
         ));
         
@@ -173,6 +175,7 @@ impl PcbWorld {
             ComponentInfo { reference, value, footprint_name: footprint },
             Position { x: position.0, y: position.1, rotation: position.2 },
             Layer { layer_name: layer },
+            ComponentDescription { description: "Integrated Circuit".to_string() },
             IntegratedCircuit, // Marker component for ICs
         ));
         
@@ -196,6 +199,7 @@ impl PcbWorld {
             ComponentInfo { reference, value, footprint_name: footprint },
             Position { x: position.0, y: position.1, rotation: position.2 },
             Layer { layer_name: layer },
+            ComponentDescription { description: "Connector".to_string() },
             Connector, // Marker component for connectors
         ));
         
